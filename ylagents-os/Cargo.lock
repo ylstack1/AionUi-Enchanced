@@ -615,6 +615,19 @@ dependencies = [
 [[package]]
 name = "aionui-embedded"
 version = "0.1.36"
+dependencies = [
+ "aionui-ai-agent",
+ "aionui-app",
+ "aionui-common",
+ "aionui-conversation",
+ "aionui-db",
+ "anyhow",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+]
 
 [[package]]
 name = "aionui-extension"
