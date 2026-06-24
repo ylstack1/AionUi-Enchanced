@@ -33,4 +33,11 @@ export class ProviderRegistry {
   }
 }
 
+import { OpenAIProvider } from './llm/OpenAIProvider';
+import { AnthropicProvider } from './llm/AnthropicProvider';
+
 export const globalProviderRegistry = new ProviderRegistry();
+
+// Register default providers
+globalProviderRegistry.register(new OpenAIProvider());
+globalProviderRegistry.register(new AnthropicProvider());
