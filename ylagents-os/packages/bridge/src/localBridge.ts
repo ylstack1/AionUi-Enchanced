@@ -1,51 +1,68 @@
 import EventEmitter from 'eventemitter3';
+import { CoreService } from '@ylagents/core';
 
-/**
- * Ported from AionUi's ProviderLike pattern.
- * This interface is what all UI components use to communicate.
- */
 export type ProviderLike<Data, Params = undefined> = {
   provider: (handler: (params: Params) => Promise<Data>) => void;
   invoke: Params extends undefined ? () => Promise<Data> : (params: Params) => Promise<Data>;
 };
 
-/**
- * Creates a local provider that routes directly to an in-process handler.
- * This is the core of the "zero-backend" architecture.
- */
 export function localProvider<Data, Params = undefined>(
   handler: (params: Params) => Promise<Data>
 ): ProviderLike<Data, Params> {
   return {
-    provider: () => {
-      // In local mode, the provider registration is handled by the bridge initialization.
-    },
+    provider: () => {},
     invoke: (params?: Params) => handler(params as Params) as Promise<Data>,
   };
 }
 
-/**
- * In-process event bus for real-time streaming and notifications.
- * Replaces WebSocket communication from the original AionCore.
- */
 export const localEmitter = new EventEmitter();
 
+// This will be initialized by the host (Capacitor/Tauri)
+let coreService: CoreService;
+
+export function initializeBridge(service: CoreService) {
+  coreService = service;
+}
+
 /**
- * The unified local bridge that UI components import.
- * It mirrors the shape of the original ipcBridge/httpBridge.
+ * Concrete implementation of the local bridge.
+ * Routes UI calls directly to the CoreService.
  */
 export const localBridge = {
   conversation: {
-    // Shims for Phase 4/5 implementation
-    sendMessage: localProvider(async (params: { conversationId: string; content: string }) => {
-      console.log('Bridge: conversation.sendMessage', params);
+    sendMessage: localProvider(async (params: any) => {
+      // For streaming, we emit events via localEmitter
+      const stream = coreService.handleSendMessage(params);
+      for await (const chunk of stream) {
+        localEmitter.emit('conversation.responseStream', {
+          conversationId: params.conversationId,
+          ...chunk
+        });
+      }
       return { success: true };
     }),
+
+    getHistory: localProvider(async (params: { conversationId: string }) => {
+      return coreService.messageRepo.getByConversation(params.conversationId);
+    })
   },
+
+  assistants: {
+    list: localProvider(async () => {
+      return coreService.db.getDriver().query('SELECT * FROM assistants ORDER BY sort_order ASC');
+    })
+  },
+
   system: {
     getSettings: localProvider(async () => {
       return { theme: 'system', language: 'en' };
     }),
+
+    storeCredential: localProvider(async (params: { key: string; secret: string }) => {
+      // In real impl, this calls native SecureStorage
+      console.log('Bridge: Storing credential reference', params.key);
+      return { success: true };
+    })
   },
 };
 
