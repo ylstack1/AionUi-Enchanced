@@ -1,0 +1,10 @@
+{
+  "name": "@ylagents/spa",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "@ylagents/bridge": "workspace:*"
+  }
+}
