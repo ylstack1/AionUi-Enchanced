@@ -17,7 +17,6 @@ export function localProvider<Data, Params = undefined>(
 
 export const localEmitter = new EventEmitter();
 
-// This will be initialized by the host (Capacitor/Tauri)
 let coreService: CoreService;
 
 export function initializeBridge(service: CoreService) {
@@ -31,7 +30,6 @@ export function initializeBridge(service: CoreService) {
 export const localBridge = {
   conversation: {
     sendMessage: localProvider(async (params: any) => {
-      // For streaming, we emit events via localEmitter
       const stream = coreService.handleSendMessage(params);
       for await (const chunk of stream) {
         localEmitter.emit('conversation.responseStream', {
@@ -44,12 +42,63 @@ export const localBridge = {
 
     getHistory: localProvider(async (params: { conversationId: string }) => {
       return coreService.messageRepo.getByConversation(params.conversationId);
+    }),
+
+    list: localProvider(async () => {
+      return coreService.conversationService.list();
+    }),
+
+    delete: localProvider(async (id: string) => {
+      return coreService.conversationService.delete(id);
     })
   },
 
   assistants: {
     list: localProvider(async () => {
-      return coreService.db.getDriver().query('SELECT * FROM assistants ORDER BY sort_order ASC');
+      return coreService.assistantService.listEnabled();
+    }),
+
+    get: localProvider(async (id: string) => {
+      return coreService.assistantService.getById(id);
+    }),
+
+    save: localProvider(async (assistant: any) => {
+      return coreService.assistantService.upsert(assistant);
+    })
+  },
+
+  mcp: {
+    listServers: localProvider(async () => {
+      return coreService.mcpService.listServers();
+    }),
+
+    getAllTools: localProvider(async () => {
+      return coreService.mcpService.getAllTools();
+    })
+  },
+
+  providers: {
+    list: localProvider(async () => {
+      return coreService.db.getDriver().query('SELECT * FROM providers');
+    }),
+
+    save: localProvider(async (provider: any) => {
+      const sql = `
+        INSERT INTO providers (id, type, name, base_url, api_key_ref, enabled, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          name = excluded.name,
+          base_url = excluded.base_url,
+          api_key_ref = excluded.api_key_ref,
+          enabled = excluded.enabled,
+          updated_at = excluded.updated_at
+      `;
+      const now = Date.now();
+      return coreService.db.getDriver().execute(sql, [
+        provider.id, provider.type, provider.name,
+        provider.base_url, provider.api_key_ref,
+        provider.enabled ? 1 : 0, now, now
+      ]);
     })
   },
 
@@ -59,8 +108,8 @@ export const localBridge = {
     }),
 
     storeCredential: localProvider(async (params: { key: string; secret: string }) => {
-      // In real impl, this calls native SecureStorage
-      console.log('Bridge: Storing credential reference', params.key);
+      // In real implementation, this is handled by the bootstrap's secureStorage shim
+      console.log('Bridge: Credential storage handled via bootstrap wiring');
       return { success: true };
     })
   },

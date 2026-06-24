@@ -1,15 +1,12 @@
-/**
- * Platform-native Secure Storage interface.
- */
+import { CoreService } from '../index';
+import { initializeBridge } from '@ylagents/bridge';
+
 export interface SecureStorage {
   store(key: string, secret: string): Promise<void>;
   retrieve(key: string): Promise<string | null>;
   delete(key: string): Promise<void>;
 }
 
-/**
- * Biometric authentication shim.
- */
 export interface Biometrics {
   isAvailable(): Promise<boolean>;
   authenticate(reason: string): Promise<boolean>;
@@ -19,19 +16,25 @@ export interface Biometrics {
  * Native App entry point.
  * Initializes the core and hooks up the platform-specific bridges.
  */
-import { CoreService } from '../index';
-import { initializeBridge } from '@ylagents/bridge';
-
 export async function bootstrapApp(options: {
   driver: any;
   skillRepo: any;
   secureStorage: SecureStorage;
 }) {
+  console.log('ylagents-os: Bootstrapping application...');
+
   const core = new CoreService(options.driver, options.skillRepo);
   await core.initialize();
 
+  // Link the core to the bridge
   initializeBridge(core);
 
-  console.log('ylagents-os: App bootstrapped successfully');
+  // Expose global bridge for UI consumption
+  if (typeof window !== 'undefined') {
+    (window as any).ylagentsBridge = require('@ylagents/bridge').localBridge;
+    (window as any).ylagentsEmitter = require('@ylagents/bridge').localEmitter;
+  }
+
+  console.log('ylagents-os: App bootstrapped and bridged successfully');
   return core;
 }
