@@ -215,3 +215,7 @@ graphify-out/
 .graphify_python
 
 .snow/
+ylagents-os/target/
+ylagents-os/node_modules/
+ylagents-os/apps/mobile-desktop/node_modules/
+ylagents-os/packages/ui/node_modules/
