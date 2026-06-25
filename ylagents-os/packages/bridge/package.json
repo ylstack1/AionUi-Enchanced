@@ -1,0 +1,10 @@
+{
+  "name": "@ylagents/bridge",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "dependencies": {
+    "@ylagents/core": "workspace:*",
+    "eventemitter3": "^5.0.1"
+  }
+}

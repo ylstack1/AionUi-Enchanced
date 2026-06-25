@@ -1,0 +1,19 @@
+{
+  "name": "ylagents-os",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Local-first mobile AI agent OS",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "bun --cwd packages/spa dev",
+    "build:spa": "bun --cwd packages/spa build",
+    "mobile:ios": "bun --cwd apps/mobile-desktop ios",
+    "mobile:android": "bun --cwd apps/mobile-desktop android"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}
